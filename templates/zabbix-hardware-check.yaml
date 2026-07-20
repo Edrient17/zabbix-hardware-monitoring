@@ -16,16 +16,6 @@ zabbix_export:
       groups:
         - name: Templates/Hardware
       items:
-        - uuid: fe237e201d3a44febc396a41a9cf9efd
-          name: 'Hardware check: Agent ping'
-          key: hw.agent.ping
-          delay: 1m
-          history: 7d
-          trends: 90d
-          value_type: UNSIGNED
-          tags:
-            - tag: component
-              value: hardware
         - uuid: c9dc0a955f26478abcbd7fb635d6a290
           name: 'Hardware check: ipmitool availability'
           key: hw.tools.ipmitool
@@ -38,6 +28,14 @@ zabbix_export:
           tags:
             - tag: component
               value: tool
+          triggers:
+            - uuid: fb512724ab00452b96d2ac5267230d70
+              expression: 'last(/Template Hardware Check/hw.tools.ipmitool)=0'
+              name: 'Hardware check: ipmitool is missing'
+              priority: WARNING
+              tags:
+                - tag: scope
+                  value: availability
         - uuid: 0b63697e5291457e80b3c0833de849cb
           name: 'Hardware check: smartctl availability'
           key: hw.tools.smartctl
@@ -50,6 +48,14 @@ zabbix_export:
           tags:
             - tag: component
               value: tool
+          triggers:
+            - uuid: b68f4f6977444326a6c3c6a1b50acaae
+              expression: 'last(/Template Hardware Check/hw.tools.smartctl)=0'
+              name: 'Hardware check: smartctl is missing'
+              priority: WARNING
+              tags:
+                - tag: scope
+                  value: availability
         - uuid: dd6434ee9ee34670b0f204b9f35b2041
           name: 'Hardware check: rasdaemon availability'
           key: hw.tools.rasdaemon
@@ -62,6 +68,14 @@ zabbix_export:
           tags:
             - tag: component
               value: tool
+          triggers:
+            - uuid: 8dfbab0c855b4a1fbbd71abd89e31adb
+              expression: 'last(/Template Hardware Check/hw.tools.rasdaemon)=0'
+              name: 'Hardware check: rasdaemon is missing'
+              priority: WARNING
+              tags:
+                - tag: scope
+                  value: availability
         - uuid: 3df7ceccce174b8091657893fd750e37
           name: 'Hardware check: Memory corrected error count'
           key: hw.memory.ce.count
@@ -72,6 +86,14 @@ zabbix_export:
           tags:
             - tag: component
               value: memory
+          triggers:
+            - uuid: 9f6c6399d8784383880473d7fc3c0e03
+              expression: 'change(/Template Hardware Check/hw.memory.ce.count)>0'
+              name: 'Hardware check: Memory corrected error count increased'
+              priority: WARNING
+              tags:
+                - tag: scope
+                  value: availability
         - uuid: ee18718ff4164a488404b07b4999c086
           name: 'Hardware check: Memory uncorrected error count'
           key: hw.memory.ue.count
@@ -82,6 +104,14 @@ zabbix_export:
           tags:
             - tag: component
               value: memory
+          triggers:
+            - uuid: 947bb35599304a9d98077f7d8958db5b
+              expression: 'last(/Template Hardware Check/hw.memory.ue.count)>0'
+              name: 'Hardware check: Memory uncorrected error detected'
+              priority: HIGH
+              tags:
+                - tag: scope
+                  value: availability
       discovery_rules:
         - uuid: fbc419059c5a46babbba4ab5e8f7c6b6
           name: 'Hardware check: Temperature sensor discovery'
@@ -103,6 +133,14 @@ zabbix_export:
                   value: '{#SENSOR}'
                 - tag: sensor_id
                   value: '{#SENSOR_ID}'
+          trigger_prototypes:
+            - uuid: 56979c3d0c234d15aa6927d2bfc9ba83
+              expression: 'min(/Template Hardware Check/hw.temp.value_by_id["{#SENSOR_ID}"],5m)>80'
+              name: 'Hardware check: Temperature {#SENSOR} [{#SENSOR_ID}] is above 80C'
+              priority: WARNING
+              tags:
+                - tag: scope
+                  value: availability
         - uuid: ffc28cc5bef842c59d829b560656ec70
           name: 'Hardware check: Fan discovery'
           key: hw.fan.discovery
@@ -123,6 +161,14 @@ zabbix_export:
                   value: '{#SENSOR}'
                 - tag: sensor_id
                   value: '{#SENSOR_ID}'
+          trigger_prototypes:
+            - uuid: b48b2a0a75d34df396b3ca236afbebe4
+              expression: 'last(/Template Hardware Check/hw.fan.rpm_by_id["{#SENSOR_ID}"])=0'
+              name: 'Hardware check: Fan {#SENSOR} [{#SENSOR_ID}] stopped'
+              priority: HIGH
+              tags:
+                - tag: scope
+                  value: availability
         - uuid: 289542a631d8414388bafa4f864cb4a2
           name: 'Hardware check: PSU discovery'
           key: hw.psu.discovery
@@ -144,6 +190,14 @@ zabbix_export:
                   value: '{#SENSOR}'
                 - tag: sensor_id
                   value: '{#SENSOR_ID}'
+          trigger_prototypes:
+            - uuid: 0a9b1ac873774e98be26e9dae3e13559
+              expression: 'last(/Template Hardware Check/hw.psu.status_by_id["{#SENSOR_ID}"])<>0'
+              name: 'Hardware check: PSU {#SENSOR} [{#SENSOR_ID}] problem'
+              priority: HIGH
+              tags:
+                - tag: scope
+                  value: availability
         - uuid: 5496b6fda51a4d9194097eb94fad1213
           name: 'Hardware check: Disk discovery'
           key: hw.disk.discovery
@@ -163,6 +217,14 @@ zabbix_export:
                   value: disk
                 - tag: disk
                   value: '{#DISK_ID}'
+          trigger_prototypes:
+            - uuid: eb4ce2df4a9c4a189d89f7b66c73c367
+              expression: 'last(/Template Hardware Check/hw.disk.smart.health["{#DISK}","{#SMART_TYPE}"])=1'
+              name: 'Hardware check: Disk {#DISK_ID} SMART health failed'
+              priority: HIGH
+              tags:
+                - tag: scope
+                  value: availability
       valuemaps:
         - uuid: 1549e4120dbe44ccbf4a3df9662a47d1
           name: 'Hardware check status'

@@ -3,6 +3,10 @@
 set -u
 
 RASDAEMON_DB="${RASDAEMON_DB:-/var/lib/rasdaemon/ras-mc_event.db}"
+RUN_UID="$(id -u 2>/dev/null || echo unknown)"
+IPMI_CACHE_FILE="${IPMI_CACHE_FILE:-/tmp/hardware-check-ipmi-sensor-${RUN_UID}.cache}"
+IPMI_CACHE_LOCK="${IPMI_CACHE_LOCK:-/tmp/hardware-check-ipmi-sensor-${RUN_UID}.lock}"
+IPMI_CACHE_TTL="${IPMI_CACHE_TTL:-20}"
 
 unsupported() {
     echo "ZBX_NOTSUPPORTED: $*" >&2
@@ -26,9 +30,61 @@ tool_exists() {
     command -v "$1" >/dev/null 2>&1 && echo 1 || echo 0
 }
 
+file_mtime() {
+    stat -c %Y "$1" 2>/dev/null || echo 0
+}
+
+ipmi_cache_fresh() {
+    [ -r "$IPMI_CACHE_FILE" ] || return 1
+
+    now="$(date +%s)"
+    mtime="$(file_mtime "$IPMI_CACHE_FILE")"
+    age=$((now - mtime))
+
+    [ "$age" -ge 0 ] && [ "$age" -le "$IPMI_CACHE_TTL" ]
+}
+
+refresh_ipmi_cache() {
+    tmp_file="${IPMI_CACHE_FILE}.$$"
+
+    if run_with_sudo ipmitool sensor >"$tmp_file" 2>/dev/null && [ -s "$tmp_file" ]; then
+        mv "$tmp_file" "$IPMI_CACHE_FILE" || {
+            rm -f "$tmp_file"
+            return 1
+        }
+        chmod 0644 "$IPMI_CACHE_FILE" 2>/dev/null || true
+        return 0
+    fi
+
+    rm -f "$tmp_file"
+    return 1
+}
+
 ipmi_sensors() {
     need_cmd ipmitool
-    run_with_sudo ipmitool sensor 2>/dev/null
+
+    if ipmi_cache_fresh; then
+        cat "$IPMI_CACHE_FILE"
+        return
+    fi
+
+    if mkdir "$IPMI_CACHE_LOCK" 2>/dev/null; then
+        refresh_ipmi_cache || {
+            rmdir "$IPMI_CACHE_LOCK" 2>/dev/null || true
+            [ -r "$IPMI_CACHE_FILE" ] && cat "$IPMI_CACHE_FILE" && return
+            unsupported "ipmitool sensor failed"
+        }
+        rmdir "$IPMI_CACHE_LOCK" 2>/dev/null || true
+        cat "$IPMI_CACHE_FILE"
+        return
+    fi
+
+    sleep 1
+    if ipmi_cache_fresh; then
+        cat "$IPMI_CACHE_FILE"
+    else
+        run_with_sudo ipmitool sensor 2>/dev/null
+    fi
 }
 
 ipmi_discovery() {

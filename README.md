@@ -40,7 +40,6 @@ sudo systemctl restart zabbix-agent
 Quick checks:
 
 ```bash
-zabbix_agentd -t hw.agent.ping
 zabbix_agentd -t hw.temp.discovery
 zabbix_agentd -t 'hw.temp.value_by_id[1]'
 zabbix_agentd -t hw.disk.discovery
@@ -57,3 +56,17 @@ Import `templates/zabbix-hardware-check.yaml` in the Zabbix frontend:
 4. Link `Template Hardware Check` to the monitored host.
 
 The template creates items for agent/tool availability, memory error counts, and low-level discovery prototypes for temperature, fan, PSU, and disk SMART health checks.
+
+## Ansible Deployment
+
+Use Ansible when deploying the agent files to multiple Linux servers.
+The playbook installs `ipmitool`, `smartmontools`, `rasdaemon`, and `sqlite3`, starts `rasdaemon`, deploys the UserParameter files, restarts `zabbix-agent` when needed, and runs basic `zabbix_agentd -t` checks.
+
+```bash
+cp ansible/inventory.example.ini ansible/inventory.ini
+vi ansible/inventory.ini
+ansible-playbook -i ansible/inventory.ini ansible/deploy-hardware-check.yml --check
+ansible-playbook -i ansible/inventory.ini ansible/deploy-hardware-check.yml
+```
+
+Set `zabbix_agent_include_dir` in the inventory to match the target server's `Include` path.
