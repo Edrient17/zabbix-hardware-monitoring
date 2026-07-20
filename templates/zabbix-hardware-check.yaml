@@ -1,5 +1,5 @@
 zabbix_export:
-  version: '7.0'
+  version: '6.0'
   template_groups:
     - uuid: 954ac085e4f14109a89bd171404ee0bf
       name: Templates/Hardware

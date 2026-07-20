@@ -17,7 +17,7 @@ services:
       retries: 10
 
   zabbix-server:
-    image: zabbix/zabbix-server-pgsql:${ZABBIX_IMAGE_TAG:-ubuntu-7.0.28}
+    image: zabbix/zabbix-server-pgsql:${ZABBIX_IMAGE_TAG:-ubuntu-6.0.47}
     restart: unless-stopped
     depends_on:
       postgres:
@@ -35,7 +35,7 @@ services:
       - zabbix-server-externalscripts:/usr/lib/zabbix/externalscripts
 
   zabbix-web:
-    image: zabbix/zabbix-web-nginx-pgsql:${ZABBIX_IMAGE_TAG:-ubuntu-7.0.28}
+    image: zabbix/zabbix-web-nginx-pgsql:${ZABBIX_IMAGE_TAG:-ubuntu-6.0.47}
     restart: unless-stopped
     depends_on:
       postgres:

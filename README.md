@@ -1,8 +1,8 @@
 # Zabbix Hardware Monitoring
 
-Local Zabbix Server stack for validating hardware monitoring against a remote Linux server running Zabbix Agent 1 passive checks.
+Local Zabbix 6.0 LTS Server stack for validating hardware monitoring against a remote Linux server running Zabbix Agent 1 passive checks.
 
-Image versions are pinned through `.env` values instead of floating `latest` tags.
+Image versions are pinned through `.env` values instead of floating `latest` tags. The default Zabbix image tag is `ubuntu-6.0.47`.
 
 ## Services
 
