@@ -26,7 +26,23 @@ Default Zabbix login:
 
 ## Remote Agent Notes
 
-The monitored Linux server should run native Zabbix Agent 1 on port `1024`.
+The monitored Linux server should run native Zabbix Agent 1 on port `10050`.
 
-Copy `agent/zabbix_agentd.d/hardware-check.conf` to the remote server's `/etc/zabbix/zabbix_agentd.d/`.
-Scripts should live in `/etc/zabbix/scripts/` on the remote server if a UserParameter calls them.
+Copy `agent/zabbix_agentd.d/hardware-check.conf` to the remote server's included agent config directory. Common paths are `/etc/zabbix/zabbix_agentd.d/` and `/etc/zabbix/zabbix_agentd.conf.d/`.
+Copy `agent/scripts/hardware-check.sh` to the remote server's `/etc/zabbix/scripts/`.
+
+```bash
+sudo install -m 0644 agent/zabbix_agentd.d/hardware-check.conf /etc/zabbix/zabbix_agentd.conf.d/hardware-check.conf
+sudo install -m 0755 agent/scripts/hardware-check.sh /etc/zabbix/scripts/hardware-check.sh
+sudo systemctl restart zabbix-agent
+```
+
+Quick checks:
+
+```bash
+zabbix_agentd -t hw.agent.ping
+zabbix_agentd -t hw.temp.discovery
+zabbix_agentd -t 'hw.temp.value_by_id[1]'
+zabbix_agentd -t hw.disk.discovery
+zabbix_agentd -t hw.memory.ce.count
+```
