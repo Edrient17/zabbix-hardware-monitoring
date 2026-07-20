@@ -15,6 +15,19 @@ zabbix_export:
         - /etc/zabbix/scripts/hardware-check.sh
       groups:
         - name: Templates/Hardware
+      macros:
+        - macro: '{$HW_TEMP_WARN}'
+          value: '80'
+          description: 'Temperature warning threshold in Celsius.'
+        - macro: '{$HW_FAN_MIN_RPM}'
+          value: '0'
+          description: 'Minimum allowed fan RPM. The default detects stopped fans.'
+        - macro: '{$HW_MEMORY_CE_CHANGE_WARN}'
+          value: '0'
+          description: 'Trigger when corrected memory error count increases by more than this value.'
+        - macro: '{$HW_MEMORY_UE_MAX}'
+          value: '0'
+          description: 'Maximum allowed uncorrected memory error count.'
       items:
         - uuid: c9dc0a955f26478abcbd7fb635d6a290
           name: 'Hardware check: ipmitool availability'
@@ -88,7 +101,7 @@ zabbix_export:
               value: memory
           triggers:
             - uuid: 9f6c6399d8784383880473d7fc3c0e03
-              expression: 'change(/Template Hardware Check/hw.memory.ce.count)>0'
+              expression: 'change(/Template Hardware Check/hw.memory.ce.count)>{$HW_MEMORY_CE_CHANGE_WARN}'
               name: 'Hardware check: Memory corrected error count increased'
               priority: WARNING
               tags:
@@ -106,7 +119,7 @@ zabbix_export:
               value: memory
           triggers:
             - uuid: 947bb35599304a9d98077f7d8958db5b
-              expression: 'last(/Template Hardware Check/hw.memory.ue.count)>0'
+              expression: 'last(/Template Hardware Check/hw.memory.ue.count)>{$HW_MEMORY_UE_MAX}'
               name: 'Hardware check: Memory uncorrected error detected'
               priority: HIGH
               tags:
@@ -135,8 +148,8 @@ zabbix_export:
                   value: '{#SENSOR_ID}'
           trigger_prototypes:
             - uuid: 56979c3d0c234d15aa6927d2bfc9ba83
-              expression: 'min(/Template Hardware Check/hw.temp.value_by_id["{#SENSOR_ID}"],5m)>80'
-              name: 'Hardware check: Temperature {#SENSOR} [{#SENSOR_ID}] is above 80C'
+              expression: 'min(/Template Hardware Check/hw.temp.value_by_id["{#SENSOR_ID}"],5m)>{$HW_TEMP_WARN}'
+              name: 'Hardware check: Temperature {#SENSOR} [{#SENSOR_ID}] is above {$HW_TEMP_WARN}C'
               priority: WARNING
               tags:
                 - tag: scope
@@ -163,7 +176,7 @@ zabbix_export:
                   value: '{#SENSOR_ID}'
           trigger_prototypes:
             - uuid: b48b2a0a75d34df396b3ca236afbebe4
-              expression: 'last(/Template Hardware Check/hw.fan.rpm_by_id["{#SENSOR_ID}"])=0'
+              expression: 'last(/Template Hardware Check/hw.fan.rpm_by_id["{#SENSOR_ID}"])<={$HW_FAN_MIN_RPM}'
               name: 'Hardware check: Fan {#SENSOR} [{#SENSOR_ID}] stopped'
               priority: HIGH
               tags:

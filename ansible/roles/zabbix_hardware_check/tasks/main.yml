@@ -1,0 +1,76 @@
+---
+- name: Ensure target OS is Debian family when installing packages
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == "Debian"
+    fail_msg: "This role currently installs packages with apt and supports Debian/Ubuntu targets."
+  when: hardware_check_install_packages | bool
+
+- name: Install hardware monitoring packages
+  ansible.builtin.apt:
+    name: "{{ hardware_check_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when: hardware_check_install_packages | bool
+
+- name: Enable and start rasdaemon service
+  ansible.builtin.service:
+    name: rasdaemon
+    enabled: true
+    state: started
+  when: hardware_check_manage_rasdaemon | bool
+
+- name: Ensure Zabbix Agent include directory exists
+  ansible.builtin.file:
+    path: "{{ zabbix_agent_include_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure Zabbix scripts directory exists
+  ansible.builtin.file:
+    path: "{{ zabbix_scripts_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy hardware UserParameter config
+  ansible.builtin.copy:
+    src: "{{ hardware_check_conf_src }}"
+    dest: "{{ zabbix_agent_include_dir }}/hardware-check.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart zabbix-agent
+
+- name: Deploy hardware check script
+  ansible.builtin.copy:
+    src: "{{ hardware_check_script_src }}"
+    dest: "{{ zabbix_scripts_dir }}/hardware-check.sh"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Apply config changes before validation
+  ansible.builtin.meta: flush_handlers
+
+- name: Validate hardware UserParameter keys
+  ansible.builtin.command:
+    cmd: "zabbix_agentd -t {{ item }}"
+  loop: "{{ hardware_check_validate_keys }}"
+  register: hardware_check_validation
+  changed_when: false
+  failed_when: hardware_check_validation.rc != 0
+  when:
+    - hardware_check_validate | bool
+    - not ansible_check_mode
+
+- name: Print validation summary
+  ansible.builtin.debug:
+    msg: "{{ hardware_check_validation.results | map(attribute='stdout') | list }}"
+  when:
+    - hardware_check_validate | bool
+    - not ansible_check_mode

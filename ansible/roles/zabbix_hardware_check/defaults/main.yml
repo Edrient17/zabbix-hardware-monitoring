@@ -1,0 +1,23 @@
+---
+zabbix_agent_include_dir: /etc/zabbix/zabbix_agentd.conf.d
+zabbix_scripts_dir: /etc/zabbix/scripts
+zabbix_agent_service: zabbix-agent
+
+hardware_check_install_packages: true
+hardware_check_manage_rasdaemon: true
+hardware_check_validate: true
+
+hardware_check_packages:
+  - ipmitool
+  - smartmontools
+  - rasdaemon
+  - sqlite3
+
+hardware_check_conf_src: "{{ playbook_dir }}/../agent/zabbix_agentd.d/hardware-check.conf"
+hardware_check_script_src: "{{ playbook_dir }}/../agent/scripts/hardware-check.sh"
+
+hardware_check_validate_keys:
+  - hw.tools.ipmitool
+  - hw.tools.smartctl
+  - hw.tools.rasdaemon
+  - hw.temp.discovery

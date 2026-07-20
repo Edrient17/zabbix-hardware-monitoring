@@ -57,10 +57,19 @@ Import `templates/zabbix-hardware-check.yaml` in the Zabbix frontend:
 
 The template creates items for agent/tool availability, memory error counts, and low-level discovery prototypes for temperature, fan, PSU, and disk SMART health checks.
 
+Template-level user macros:
+
+- `{$HW_TEMP_WARN}`: temperature warning threshold in Celsius. Default: `80`.
+- `{$HW_FAN_MIN_RPM}`: minimum allowed fan RPM. Default: `0`.
+- `{$HW_MEMORY_CE_CHANGE_WARN}`: corrected memory error count increase threshold. Default: `0`.
+- `{$HW_MEMORY_UE_MAX}`: maximum allowed uncorrected memory error count. Default: `0`.
+
+Override these macros on the linked host when a server model needs different thresholds.
+
 ## Ansible Deployment
 
 Use Ansible when deploying the agent files to multiple Linux servers.
-The playbook installs `ipmitool`, `smartmontools`, `rasdaemon`, and `sqlite3`, starts `rasdaemon`, deploys the UserParameter files, restarts `zabbix-agent` when needed, and runs basic `zabbix_agentd -t` checks.
+The playbook uses the `zabbix_hardware_check` role. It installs `ipmitool`, `smartmontools`, `rasdaemon`, and `sqlite3`, starts `rasdaemon`, deploys the UserParameter files, restarts `zabbix-agent` when needed, and runs basic `zabbix_agentd -t` checks.
 
 ```bash
 cp ansible/inventory.example.ini ansible/inventory.ini
@@ -70,3 +79,10 @@ ansible-playbook -i ansible/inventory.ini ansible/deploy-hardware-check.yml
 ```
 
 Set `zabbix_agent_include_dir` in the inventory to match the target server's `Include` path.
+
+Useful role variables:
+
+- `hardware_check_install_packages`: install required packages. Default: `true`.
+- `hardware_check_manage_rasdaemon`: enable and start `rasdaemon`. Default: `true`.
+- `hardware_check_validate`: run `zabbix_agentd -t` checks after deployment. Default: `true`.
+- `hardware_check_validate_keys`: UserParameter keys to validate.
