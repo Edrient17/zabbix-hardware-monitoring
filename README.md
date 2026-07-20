@@ -46,3 +46,14 @@ zabbix_agentd -t 'hw.temp.value_by_id[1]'
 zabbix_agentd -t hw.disk.discovery
 zabbix_agentd -t hw.memory.ce.count
 ```
+
+## Zabbix Template
+
+Import `templates/zabbix-hardware-check.yaml` in the Zabbix frontend:
+
+1. Go to `Data collection` -> `Templates`.
+2. Click `Import`.
+3. Select `templates/zabbix-hardware-check.yaml`.
+4. Link `Template Hardware Check` to the monitored host.
+
+The first template version creates items for tool availability, rasdaemon status, memory error counts, and low-level discovery prototypes for temperature, fan, PSU, and disk SMART health checks.
