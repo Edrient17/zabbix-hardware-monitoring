@@ -56,4 +56,4 @@ Import `templates/zabbix-hardware-check.yaml` in the Zabbix frontend:
 3. Select `templates/zabbix-hardware-check.yaml`.
 4. Link `Template Hardware Check` to the monitored host.
 
-The first template version creates items for tool availability, rasdaemon status, memory error counts, and low-level discovery prototypes for temperature, fan, PSU, and disk SMART health checks.
+The template creates items for agent/tool availability, memory error counts, and low-level discovery prototypes for temperature, fan, PSU, and disk SMART health checks.

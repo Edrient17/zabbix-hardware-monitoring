@@ -1,10 +1,10 @@
 zabbix_export:
   version: '7.0'
   template_groups:
-    - uuid: 20d4525b3f5b524ab27dcd653b57335c
+    - uuid: 954ac085e4f14109a89bd171404ee0bf
       name: Templates/Hardware
   templates:
-    - uuid: 5fe9a4aff5b359edbce89ef824fdbfa0
+    - uuid: ea6b29de0bbf4d33ba7f4ebf4498646a
       template: 'Template Hardware Check'
       name: 'Template Hardware Check'
       description: |
@@ -16,7 +16,7 @@ zabbix_export:
       groups:
         - name: Templates/Hardware
       items:
-        - uuid: 4f28722ffe185785a9f0ece6d8da555d
+        - uuid: fe237e201d3a44febc396a41a9cf9efd
           name: 'Hardware check: Agent ping'
           key: hw.agent.ping
           delay: 1m
@@ -26,7 +26,7 @@ zabbix_export:
           tags:
             - tag: component
               value: hardware
-        - uuid: 77cbd5a430f5532b88644c085a5d3dee
+        - uuid: c9dc0a955f26478abcbd7fb635d6a290
           name: 'Hardware check: ipmitool availability'
           key: hw.tools.ipmitool
           delay: 10m
@@ -38,7 +38,7 @@ zabbix_export:
           tags:
             - tag: component
               value: tool
-        - uuid: d07be5188618514a8ce31bb9fd4a20dd
+        - uuid: 0b63697e5291457e80b3c0833de849cb
           name: 'Hardware check: smartctl availability'
           key: hw.tools.smartctl
           delay: 10m
@@ -50,7 +50,7 @@ zabbix_export:
           tags:
             - tag: component
               value: tool
-        - uuid: b9ffe6bdf4275254af3f9b9ea7ff344b
+        - uuid: dd6434ee9ee34670b0f204b9f35b2041
           name: 'Hardware check: rasdaemon availability'
           key: hw.tools.rasdaemon
           delay: 10m
@@ -62,19 +62,7 @@ zabbix_export:
           tags:
             - tag: component
               value: tool
-        - uuid: c8084e921538511891ed6a2152c961b5
-          name: 'Hardware check: rasdaemon status'
-          key: hw.ras.status
-          delay: 5m
-          history: 7d
-          trends: 90d
-          value_type: UNSIGNED
-          valuemap:
-            name: 'Hardware check availability'
-          tags:
-            - tag: component
-              value: memory
-        - uuid: f3014eb3663e5681997c1e126907beb6
+        - uuid: 3df7ceccce174b8091657893fd750e37
           name: 'Hardware check: Memory corrected error count'
           key: hw.memory.ce.count
           delay: 5m
@@ -84,7 +72,7 @@ zabbix_export:
           tags:
             - tag: component
               value: memory
-        - uuid: 3aab759faae8587abac0fc7eb6cc8ce9
+        - uuid: ee18718ff4164a488404b07b4999c086
           name: 'Hardware check: Memory uncorrected error count'
           key: hw.memory.ue.count
           delay: 5m
@@ -95,12 +83,12 @@ zabbix_export:
             - tag: component
               value: memory
       discovery_rules:
-        - uuid: 35ef8d3c708d5df78b15948e3ae37e5a
+        - uuid: fbc419059c5a46babbba4ab5e8f7c6b6
           name: 'Hardware check: Temperature sensor discovery'
           key: hw.temp.discovery
           delay: 10m
           item_prototypes:
-            - uuid: c3f1658923b5587cbe34c51663834ee6
+            - uuid: 23beeb5a920a4c2583cf7529583a8a7e
               name: 'Hardware check: Temperature {#SENSOR} [{#SENSOR_ID}]'
               key: 'hw.temp.value_by_id["{#SENSOR_ID}"]'
               delay: 1m
@@ -115,12 +103,12 @@ zabbix_export:
                   value: '{#SENSOR}'
                 - tag: sensor_id
                   value: '{#SENSOR_ID}'
-        - uuid: 73951fa5bb7852a38331e75cbb286f70
+        - uuid: ffc28cc5bef842c59d829b560656ec70
           name: 'Hardware check: Fan discovery'
           key: hw.fan.discovery
           delay: 10m
           item_prototypes:
-            - uuid: 4f486fc76ff159edaa4915344ef588a1
+            - uuid: d5cbae4c334244ef892faeac8c4d6afe
               name: 'Hardware check: Fan {#SENSOR} [{#SENSOR_ID}] speed'
               key: 'hw.fan.rpm_by_id["{#SENSOR_ID}"]'
               delay: 1m
@@ -135,12 +123,12 @@ zabbix_export:
                   value: '{#SENSOR}'
                 - tag: sensor_id
                   value: '{#SENSOR_ID}'
-        - uuid: 55efddef20d35aa0b0fa774dbb6327e3
+        - uuid: 289542a631d8414388bafa4f864cb4a2
           name: 'Hardware check: PSU discovery'
           key: hw.psu.discovery
           delay: 10m
           item_prototypes:
-            - uuid: f32055a31f1b5c508eaa32c86d97bf72
+            - uuid: 83c89ac2d34f4deaa6c281c321718649
               name: 'Hardware check: PSU {#SENSOR} [{#SENSOR_ID}] status'
               key: 'hw.psu.status_by_id["{#SENSOR_ID}"]'
               delay: 1m
@@ -156,13 +144,13 @@ zabbix_export:
                   value: '{#SENSOR}'
                 - tag: sensor_id
                   value: '{#SENSOR_ID}'
-        - uuid: 8f0d0c2d89075fa4b7d78b1a29b108c9
+        - uuid: 5496b6fda51a4d9194097eb94fad1213
           name: 'Hardware check: Disk discovery'
           key: hw.disk.discovery
           delay: 1h
           item_prototypes:
-            - uuid: 8114bf03a3a1565a827d029408f5a91f
-              name: 'Hardware check: Disk {#DISK} SMART health'
+            - uuid: 7cdd2bcf210440e09313e3eece8d8a87
+              name: 'Hardware check: Disk {#DISK_ID} SMART health'
               key: 'hw.disk.smart.health["{#DISK}","{#SMART_TYPE}"]'
               delay: 5m
               history: 30d
@@ -174,9 +162,9 @@ zabbix_export:
                 - tag: component
                   value: disk
                 - tag: disk
-                  value: '{#DISK}'
+                  value: '{#DISK_ID}'
       valuemaps:
-        - uuid: e3733c952a6f565a97d37048a4a3980d
+        - uuid: 1549e4120dbe44ccbf4a3df9662a47d1
           name: 'Hardware check status'
           mappings:
             - value: '0'
@@ -185,7 +173,7 @@ zabbix_export:
               newvalue: Problem
             - value: '2'
               newvalue: Unknown
-        - uuid: acaf10f4b1315ed5bed64c845de63990
+        - uuid: ec222ba8047146fab186bd57626c1744
           name: 'Hardware check availability'
           mappings:
             - value: '0'

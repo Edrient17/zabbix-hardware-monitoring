@@ -46,8 +46,9 @@ ipmi_discovery() {
         function sensor_type(name, unit) {
             n = tolower(name)
             u = tolower(unit)
+            if (u ~ /discrete/ || n ~ /redundancy|presence|status|fail|fault/) return "status"
             if (u ~ /degrees c/ || n ~ /temp|thermal|inlet|exhaust|ambient/) return "temperature"
-            if (u ~ /rpm/ || n ~ /fan|blower/) return "fan"
+            if (u ~ /rpm/) return "fan"
             if (n ~ /psu|power supply|pwr supply|power unit/) return "psu"
             return "other"
         }
@@ -191,9 +192,11 @@ disk_discovery() {
             for (i = 2; i <= NF; i++) {
                 if ($i == "-d" && (i + 1) <= NF) type = $(i + 1)
             }
+            disk_id = dev
+            if (type != "" && type != "auto") disk_id = dev " " type
             if (!first) printf ","
             first = 0
-            printf "{\"{#DISK}\":\"%s\",\"{#SMART_TYPE}\":\"%s\"}", esc(dev), esc(type)
+            printf "{\"{#DISK_ID}\":\"%s\",\"{#DISK}\":\"%s\",\"{#SMART_TYPE}\":\"%s\"}", esc(disk_id), esc(dev), esc(type)
         }
         END { print "]}" }
     '
@@ -282,22 +285,6 @@ smart_attr() {
     echo "$value"
 }
 
-ras_status() {
-    need_cmd ras-mc-ctl
-
-    output="$(ras-mc-ctl --status 2>/dev/null || true)"
-    [ -n "$output" ] || unsupported "empty ras-mc-ctl status output"
-
-    echo "$output" | awk '
-        BEGIN { ok = 0 }
-        {
-            line = tolower($0)
-            if (line ~ /active|running|enabled/) ok = 1
-        }
-        END { print ok }
-    '
-}
-
 ras_summary() {
     need_cmd ras-mc-ctl
     ras-mc-ctl --summary 2>/dev/null || unsupported "ras-mc-ctl --summary failed"
@@ -357,7 +344,7 @@ memory_error_count() {
     if [ -n "$count" ]; then
         echo "$count"
     else
-        summary_mc_count "$mode"
+        summary_mc_count "$mode" 2>/dev/null || echo 0
     fi
 }
 
@@ -367,7 +354,7 @@ Usage: hardware-check.sh <command> [args]
 
 Commands:
   tool <ipmitool|smartctl|ras-mc-ctl>
-  ipmi-discovery [all|temperature|fan|psu]
+  ipmi-discovery [all|temperature|fan|psu|status]
   ipmi-value <sensor-name>
   ipmi-value-by-id <sensor-id>
   ipmi-status <sensor-name>
@@ -375,8 +362,6 @@ Commands:
   disk-discovery
   smart-health <disk> [smart-type]
   smart-attr <disk> [smart-type] <attribute-id-or-name>
-  ras-status
-  ras-summary
   memory-ce-count
   memory-ue-count
 EOF
@@ -412,12 +397,6 @@ case "$command" in
         ;;
     smart-attr)
         smart_attr "${1:-}" "${2:-auto}" "${3:-}"
-        ;;
-    ras-status)
-        ras_status
-        ;;
-    ras-summary)
-        ras_summary
         ;;
     memory-ce-count)
         memory_error_count ce
