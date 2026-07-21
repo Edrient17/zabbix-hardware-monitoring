@@ -1,8 +1,8 @@
 # Zabbix Hardware Monitoring
 
-Local Zabbix 6.0 LTS Server stack for validating hardware monitoring against a remote Linux server running Zabbix Agent 1 passive checks.
+Local Zabbix 7 Server stack for validating hardware monitoring against a remote Linux server running Zabbix Agent 1 passive checks.
 
-Image versions are pinned through `.env` values instead of floating `latest` tags. The default Zabbix image tag is `ubuntu-6.0.47`.
+Image versions are pinned through `.env` values instead of floating `latest` tags. The default Zabbix image tag is `ubuntu-7.4.12`.
 
 ## Services
 
@@ -53,7 +53,7 @@ Import `templates/zabbix-hardware-check.yaml` in the Zabbix frontend:
 1. Go to `Data collection` -> `Templates`.
 2. Click `Import`.
 3. Select `templates/zabbix-hardware-check.yaml`.
-4. Link `Template Hardware Check` to the monitored host.
+4. Link `Template Hardware Check` from `Templates/Custom/Hardware` to the monitored host.
 
 The template creates items for agent/tool availability, memory error counts, and low-level discovery prototypes for temperature, fan, PSU, and disk SMART health checks.
 
