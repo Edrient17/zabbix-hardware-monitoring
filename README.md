@@ -53,7 +53,7 @@ Import `templates/zabbix-hardware-check.yaml` in the Zabbix frontend:
 1. Go to `Data collection` -> `Templates`.
 2. Click `Import`.
 3. Select `templates/zabbix-hardware-check.yaml`.
-4. Link `Template Hardware Check` from `Templates/Custom/Hardware` to the monitored host.
+4. Link `Custom Hardware Check` from `Templates/Custom/Hardware` to the monitored host.
 
 The template creates items for agent/tool availability, memory error counts, and low-level discovery prototypes for temperature, fan, PSU, and disk SMART health checks.
 

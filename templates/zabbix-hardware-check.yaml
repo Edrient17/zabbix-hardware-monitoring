@@ -5,8 +5,8 @@ zabbix_export:
       name: Templates/Custom/Hardware
   templates:
     - uuid: ea6b29de0bbf4d33ba7f4ebf4498646a
-      template: 'Template Hardware Check'
-      name: 'Template Hardware Check'
+      template: 'Custom Hardware Check'
+      name: 'Custom Hardware Check'
       description: |
         Monitors Linux server hardware through Zabbix Agent 1 UserParameter keys.
 
@@ -43,7 +43,7 @@ zabbix_export:
               value: tool
           triggers:
             - uuid: fb512724ab00452b96d2ac5267230d70
-              expression: 'last(/Template Hardware Check/hw.tools.ipmitool)=0'
+              expression: 'last(/Custom Hardware Check/hw.tools.ipmitool)=0'
               name: 'Hardware check: ipmitool is missing'
               priority: WARNING
               tags:
@@ -63,7 +63,7 @@ zabbix_export:
               value: tool
           triggers:
             - uuid: b68f4f6977444326a6c3c6a1b50acaae
-              expression: 'last(/Template Hardware Check/hw.tools.smartctl)=0'
+              expression: 'last(/Custom Hardware Check/hw.tools.smartctl)=0'
               name: 'Hardware check: smartctl is missing'
               priority: WARNING
               tags:
@@ -83,7 +83,7 @@ zabbix_export:
               value: tool
           triggers:
             - uuid: 8dfbab0c855b4a1fbbd71abd89e31adb
-              expression: 'last(/Template Hardware Check/hw.tools.rasdaemon)=0'
+              expression: 'last(/Custom Hardware Check/hw.tools.rasdaemon)=0'
               name: 'Hardware check: rasdaemon is missing'
               priority: WARNING
               tags:
@@ -101,7 +101,7 @@ zabbix_export:
               value: memory
           triggers:
             - uuid: 9f6c6399d8784383880473d7fc3c0e03
-              expression: 'change(/Template Hardware Check/hw.memory.ce.count)>{$HW_MEMORY_CE_CHANGE_WARN}'
+              expression: 'change(/Custom Hardware Check/hw.memory.ce.count)>{$HW_MEMORY_CE_CHANGE_WARN}'
               name: 'Hardware check: Memory corrected error count increased'
               priority: WARNING
               tags:
@@ -119,7 +119,7 @@ zabbix_export:
               value: memory
           triggers:
             - uuid: 947bb35599304a9d98077f7d8958db5b
-              expression: 'last(/Template Hardware Check/hw.memory.ue.count)>{$HW_MEMORY_UE_MAX}'
+              expression: 'last(/Custom Hardware Check/hw.memory.ue.count)>{$HW_MEMORY_UE_MAX}'
               name: 'Hardware check: Memory uncorrected error detected'
               priority: HIGH
               tags:
@@ -148,7 +148,7 @@ zabbix_export:
                   value: '{#SENSOR_ID}'
           trigger_prototypes:
             - uuid: 56979c3d0c234d15aa6927d2bfc9ba83
-              expression: 'min(/Template Hardware Check/hw.temp.value_by_id["{#SENSOR_ID}"],5m)>{$HW_TEMP_WARN}'
+              expression: 'min(/Custom Hardware Check/hw.temp.value_by_id["{#SENSOR_ID}"],5m)>{$HW_TEMP_WARN}'
               name: 'Hardware check: Temperature {#SENSOR} [{#SENSOR_ID}] is above {$HW_TEMP_WARN}C'
               priority: WARNING
               tags:
@@ -176,7 +176,7 @@ zabbix_export:
                   value: '{#SENSOR_ID}'
           trigger_prototypes:
             - uuid: b48b2a0a75d34df396b3ca236afbebe4
-              expression: 'last(/Template Hardware Check/hw.fan.rpm_by_id["{#SENSOR_ID}"])<={$HW_FAN_MIN_RPM}'
+              expression: 'last(/Custom Hardware Check/hw.fan.rpm_by_id["{#SENSOR_ID}"])<={$HW_FAN_MIN_RPM}'
               name: 'Hardware check: Fan {#SENSOR} [{#SENSOR_ID}] stopped'
               priority: HIGH
               tags:
@@ -205,7 +205,7 @@ zabbix_export:
                   value: '{#SENSOR_ID}'
           trigger_prototypes:
             - uuid: 0a9b1ac873774e98be26e9dae3e13559
-              expression: 'last(/Template Hardware Check/hw.psu.status_by_id["{#SENSOR_ID}"])<>0'
+              expression: 'last(/Custom Hardware Check/hw.psu.status_by_id["{#SENSOR_ID}"])<>0'
               name: 'Hardware check: PSU {#SENSOR} [{#SENSOR_ID}] problem'
               priority: HIGH
               tags:
@@ -232,7 +232,7 @@ zabbix_export:
                   value: '{#DISK_ID}'
           trigger_prototypes:
             - uuid: eb4ce2df4a9c4a189d89f7b66c73c367
-              expression: 'last(/Template Hardware Check/hw.disk.smart.health["{#DISK}","{#SMART_TYPE}"])=1'
+              expression: 'last(/Custom Hardware Check/hw.disk.smart.health["{#DISK}","{#SMART_TYPE}"])=1'
               name: 'Hardware check: Disk {#DISK_ID} SMART health failed'
               priority: HIGH
               tags:
