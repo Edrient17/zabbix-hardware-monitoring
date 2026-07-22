@@ -104,9 +104,9 @@ ipmi_discovery() {
             u = tolower(unit)
             if (u ~ /degrees c/ || n ~ /temp|thermal|inlet|exhaust|ambient/) return "temperature"
             if (u ~ /rpm/) return "fan"
-            if (u ~ /volts?/ || n ~ /voltage|vcore|volt/) return "voltage"
             if (n ~ /psu|power supply|pwr supply|power unit/) return "psu"
-            if (u ~ /discrete/ || n ~ /redundancy|presence|status|fail|fault/) return "status"
+            if (u ~ /discrete/ || n ~ /redundancy|presence|status|fail|fault|power good|(^|[^a-z])pg([^a-z]|$)/) return "status"
+            if (u ~ /volts?/ || n ~ /voltage|volt/) return "voltage"
             return "other"
         }
         BEGIN { first = 1; printf "{\"data\":[" }
