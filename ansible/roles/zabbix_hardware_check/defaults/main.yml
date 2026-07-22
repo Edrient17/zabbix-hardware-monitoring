@@ -21,3 +21,4 @@ hardware_check_validate_keys:
   - hw.tools.smartctl
   - hw.tools.rasdaemon
   - hw.temp.discovery
+  - hw.voltage.discovery

@@ -146,10 +146,33 @@ zabbix_export:
                   value: '{#SENSOR}'
                 - tag: sensor_id
                   value: '{#SENSOR_ID}'
+            - uuid: b461d2d5014b4e1db40f39e7308b724c
+              name: 'Hardware check: Temperature {#SENSOR} [{#SENSOR_ID}] status'
+              key: 'hw.temp.status_by_id["{#SENSOR_ID}"]'
+              delay: 1m
+              history: 30d
+              trends: 365d
+              value_type: UNSIGNED
+              valuemap:
+                name: 'Hardware check status'
+              tags:
+                - tag: component
+                  value: temperature
+                - tag: sensor
+                  value: '{#SENSOR}'
+                - tag: sensor_id
+                  value: '{#SENSOR_ID}'
           trigger_prototypes:
             - uuid: 56979c3d0c234d15aa6927d2bfc9ba83
               expression: 'min(/Custom Hardware Check/hw.temp.value_by_id["{#SENSOR_ID}"],5m)>{$HW_TEMP_WARN}'
               name: 'Hardware check: Temperature {#SENSOR} [{#SENSOR_ID}] is above {$HW_TEMP_WARN}C'
+              priority: WARNING
+              tags:
+                - tag: scope
+                  value: availability
+            - uuid: 753dc92c09224cb0b8c3fb3050b1937a
+              expression: 'last(/Custom Hardware Check/hw.temp.status_by_id["{#SENSOR_ID}"])<>0'
+              name: 'Hardware check: Temperature {#SENSOR} [{#SENSOR_ID}] status is not OK'
               priority: WARNING
               tags:
                 - tag: scope
@@ -174,10 +197,33 @@ zabbix_export:
                   value: '{#SENSOR}'
                 - tag: sensor_id
                   value: '{#SENSOR_ID}'
+            - uuid: 2ceec0f7f1a046a380d12470ffaea6d5
+              name: 'Hardware check: Fan {#SENSOR} [{#SENSOR_ID}] status'
+              key: 'hw.fan.status_by_id["{#SENSOR_ID}"]'
+              delay: 1m
+              history: 30d
+              trends: 365d
+              value_type: UNSIGNED
+              valuemap:
+                name: 'Hardware check status'
+              tags:
+                - tag: component
+                  value: fan
+                - tag: sensor
+                  value: '{#SENSOR}'
+                - tag: sensor_id
+                  value: '{#SENSOR_ID}'
           trigger_prototypes:
             - uuid: b48b2a0a75d34df396b3ca236afbebe4
               expression: 'last(/Custom Hardware Check/hw.fan.rpm_by_id["{#SENSOR_ID}"])<={$HW_FAN_MIN_RPM}'
               name: 'Hardware check: Fan {#SENSOR} [{#SENSOR_ID}] stopped'
+              priority: HIGH
+              tags:
+                - tag: scope
+                  value: availability
+            - uuid: 05f158cd7dc142b086a0eaed8c703d03
+              expression: 'last(/Custom Hardware Check/hw.fan.status_by_id["{#SENSOR_ID}"])<>0'
+              name: 'Hardware check: Fan {#SENSOR} [{#SENSOR_ID}] status is not OK'
               priority: HIGH
               tags:
                 - tag: scope
@@ -208,6 +254,50 @@ zabbix_export:
               expression: 'last(/Custom Hardware Check/hw.psu.status_by_id["{#SENSOR_ID}"])<>0'
               name: 'Hardware check: PSU {#SENSOR} [{#SENSOR_ID}] problem'
               priority: HIGH
+              tags:
+                - tag: scope
+                  value: availability
+        - uuid: 3f3da9a714f148699e4b1e1acc9b6592
+          name: 'Hardware check: Voltage sensor discovery'
+          key: hw.voltage.discovery
+          delay: 10m
+          item_prototypes:
+            - uuid: 4c7e0f99a7d74194bde29813e5fa7bab
+              name: 'Hardware check: Voltage {#SENSOR} [{#SENSOR_ID}]'
+              key: 'hw.voltage.value_by_id["{#SENSOR_ID}"]'
+              delay: 1m
+              history: 30d
+              trends: 365d
+              value_type: FLOAT
+              units: V
+              tags:
+                - tag: component
+                  value: voltage
+                - tag: sensor
+                  value: '{#SENSOR}'
+                - tag: sensor_id
+                  value: '{#SENSOR_ID}'
+            - uuid: f10cacfdf5754c4185f261e225104fbe
+              name: 'Hardware check: Voltage {#SENSOR} [{#SENSOR_ID}] status'
+              key: 'hw.voltage.status_by_id["{#SENSOR_ID}"]'
+              delay: 1m
+              history: 30d
+              trends: 365d
+              value_type: UNSIGNED
+              valuemap:
+                name: 'Hardware check status'
+              tags:
+                - tag: component
+                  value: voltage
+                - tag: sensor
+                  value: '{#SENSOR}'
+                - tag: sensor_id
+                  value: '{#SENSOR_ID}'
+          trigger_prototypes:
+            - uuid: 88220019dd324cb1a04c8461fe3c4203
+              expression: 'last(/Custom Hardware Check/hw.voltage.status_by_id["{#SENSOR_ID}"])<>0'
+              name: 'Hardware check: Voltage {#SENSOR} [{#SENSOR_ID}] status is not OK'
+              priority: WARNING
               tags:
                 - tag: scope
                   value: availability

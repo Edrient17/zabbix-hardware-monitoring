@@ -102,10 +102,11 @@ ipmi_discovery() {
         function sensor_type(name, unit) {
             n = tolower(name)
             u = tolower(unit)
-            if (u ~ /discrete/ || n ~ /redundancy|presence|status|fail|fault/) return "status"
             if (u ~ /degrees c/ || n ~ /temp|thermal|inlet|exhaust|ambient/) return "temperature"
             if (u ~ /rpm/) return "fan"
+            if (u ~ /volts?/ || n ~ /voltage|vcore|volt/) return "voltage"
             if (n ~ /psu|power supply|pwr supply|power unit/) return "psu"
+            if (u ~ /discrete/ || n ~ /redundancy|presence|status|fail|fault/) return "status"
             return "other"
         }
         BEGIN { first = 1; printf "{\"data\":[" }
@@ -410,7 +411,7 @@ Usage: hardware-check.sh <command> [args]
 
 Commands:
   tool <ipmitool|smartctl|ras-mc-ctl>
-  ipmi-discovery [all|temperature|fan|psu|status]
+  ipmi-discovery [all|temperature|fan|psu|voltage|status]
   ipmi-value <sensor-name>
   ipmi-value-by-id <sensor-id>
   ipmi-status <sensor-name>
