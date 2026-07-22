@@ -80,9 +80,19 @@ grep -n '^Include=' /etc/zabbix/zabbix_agentd.conf
 
 ## 4. Ansible Deployment
 
-Use Ansible for repeatable deployment.
+Use the separate Ansible deployment repository for repeatable target server setup.
+This main repository keeps Ansible files for integrated project management, but the deployment repository is the recommended source when applying the configuration to real Linux servers.
+
+Repository:
+
+```text
+https://github.com/Edrient17/zabbix-hardware-check-ansible
+```
 
 ```bash
+git clone https://github.com/Edrient17/zabbix-hardware-check-ansible.git
+cd zabbix-hardware-check-ansible
+
 cp ansible/inventory.example.ini ansible/inventory.ini
 vi ansible/inventory.ini
 ```
@@ -199,4 +209,3 @@ If IPMI discovery gets stuck, clear the cache:
 sudo rm -rf /tmp/hardware-check-ipmi-sensor-*
 sudo systemctl restart zabbix-agent
 ```
-

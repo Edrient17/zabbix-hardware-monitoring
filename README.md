@@ -68,14 +68,23 @@ Override these macros on the linked host when a server model needs different thr
 
 ## Ansible Deployment
 
-Use Ansible when deploying the agent files to multiple Linux servers.
-The playbook uses the `zabbix_hardware_check` role. It installs `ipmitool`, `smartmontools`, `rasdaemon`, and `sqlite3`, starts `rasdaemon`, deploys the UserParameter files, restarts `zabbix-agent` when needed, and runs basic `zabbix_agentd -t` checks.
+This repository keeps the Ansible files together with the Zabbix stack, template, and documentation for project-level management.
+For actual target server deployment, use the separate deployment-only repository:
+
+- https://github.com/Edrient17/zabbix-hardware-check-ansible
+
+The deployment repository contains only the files needed on monitored Linux servers: the UserParameter config, `hardware-check.sh`, inventory example, playbook, and role.
+The role installs `ipmitool`, `smartmontools`, `rasdaemon`, and `sqlite3`, starts `rasdaemon`, deploys the UserParameter files, restarts `zabbix-agent` when needed, and runs basic `zabbix_agentd -t` checks.
 
 ```bash
+git clone https://github.com/Edrient17/zabbix-hardware-check-ansible.git
+cd zabbix-hardware-check-ansible
+
 cp ansible/inventory.example.ini ansible/inventory.ini
 vi ansible/inventory.ini
-ansible-playbook -i ansible/inventory.ini ansible/deploy-hardware-check.yml --check
-ansible-playbook -i ansible/inventory.ini ansible/deploy-hardware-check.yml
+
+ansible-playbook --syntax-check -i ansible/inventory.ini ansible/deploy-hardware-check.yml
+ansible-playbook -i ansible/inventory.ini ansible/deploy-hardware-check.yml --ask-pass --ask-become-pass
 ```
 
 Set `zabbix_agent_include_dir` in the inventory to match the target server's `Include` path.
