@@ -86,3 +86,9 @@ Useful role variables:
 - `hardware_check_manage_rasdaemon`: enable and start `rasdaemon`. Default: `true`.
 - `hardware_check_validate`: run `zabbix_agentd -t` checks after deployment. Default: `true`.
 - `hardware_check_validate_keys`: UserParameter keys to validate.
+
+## Documentation
+
+- `docs/installation-guide.md`: detailed installation and validation guide.
+- `docs/screenshots.md`: screenshot list and capture guide.
+- `images/`: screenshot storage directory.

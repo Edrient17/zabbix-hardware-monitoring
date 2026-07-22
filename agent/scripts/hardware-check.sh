@@ -4,9 +4,13 @@ set -u
 
 RASDAEMON_DB="${RASDAEMON_DB:-/var/lib/rasdaemon/ras-mc_event.db}"
 RUN_UID="$(id -u 2>/dev/null || echo unknown)"
-IPMI_CACHE_FILE="${IPMI_CACHE_FILE:-/tmp/hardware-check-ipmi-sensor-${RUN_UID}.cache}"
-IPMI_CACHE_LOCK="${IPMI_CACHE_LOCK:-/tmp/hardware-check-ipmi-sensor-${RUN_UID}.lock}"
-IPMI_CACHE_TTL="${IPMI_CACHE_TTL:-20}"
+IPMI_CACHE_DIR="${IPMI_CACHE_DIR:-/tmp/hardware-check-ipmi-sensor-${RUN_UID}}"
+IPMI_CACHE_FILE="${IPMI_CACHE_FILE:-$IPMI_CACHE_DIR/sensor.cache}"
+IPMI_CACHE_LOCK="${IPMI_CACHE_LOCK:-$IPMI_CACHE_DIR/sensor.lock}"
+IPMI_PSU_CACHE_FILE="${IPMI_PSU_CACHE_FILE:-$IPMI_CACHE_DIR/power-supply.cache}"
+IPMI_PSU_CACHE_LOCK="${IPMI_PSU_CACHE_LOCK:-$IPMI_CACHE_DIR/power-supply.lock}"
+IPMI_CACHE_TTL="${IPMI_CACHE_TTL:-50}"
+IPMI_CACHE_LOCK_TTL="${IPMI_CACHE_LOCK_TTL:-30}"
 
 unsupported() {
     echo "ZBX_NOTSUPPORTED: $*" >&2
@@ -30,6 +34,15 @@ tool_exists() {
     command -v "$1" >/dev/null 2>&1 && echo 1 || echo 0
 }
 
+ensure_ipmi_cache_dir() {
+    if [ ! -d "$IPMI_CACHE_DIR" ]; then
+        mkdir -p "$IPMI_CACHE_DIR" 2>/dev/null || unsupported "cannot create IPMI cache directory"
+        chmod 0755 "$IPMI_CACHE_DIR" 2>/dev/null || true
+    fi
+
+    [ -w "$IPMI_CACHE_DIR" ] || unsupported "IPMI cache directory is not writable"
+}
+
 file_mtime() {
     stat -c %Y "$1" 2>/dev/null || echo 0
 }
@@ -44,14 +57,25 @@ ipmi_cache_fresh() {
     [ "$age" -ge 0 ] && [ "$age" -le "$IPMI_CACHE_TTL" ]
 }
 
+ipmi_psu_cache_fresh() {
+    [ -r "$IPMI_PSU_CACHE_FILE" ] || return 1
+
+    now="$(date +%s)"
+    mtime="$(file_mtime "$IPMI_PSU_CACHE_FILE")"
+    age=$((now - mtime))
+
+    [ "$age" -ge 0 ] && [ "$age" -le "$IPMI_CACHE_TTL" ]
+}
+
 refresh_ipmi_cache() {
     tmp_file="${IPMI_CACHE_FILE}.$$"
 
     if run_with_sudo ipmitool sensor >"$tmp_file" 2>/dev/null && [ -s "$tmp_file" ]; then
-        mv "$tmp_file" "$IPMI_CACHE_FILE" || {
+        cat "$tmp_file" >"$IPMI_CACHE_FILE" || {
             rm -f "$tmp_file"
             return 1
         }
+        rm -f "$tmp_file"
         chmod 0644 "$IPMI_CACHE_FILE" 2>/dev/null || true
         return 0
     fi
@@ -60,13 +84,85 @@ refresh_ipmi_cache() {
     return 1
 }
 
+refresh_ipmi_psu_cache() {
+    tmp_file="${IPMI_PSU_CACHE_FILE}.$$"
+
+    if run_with_sudo ipmitool sdr type "Power Supply" >"$tmp_file" 2>/dev/null && [ -s "$tmp_file" ]; then
+        cat "$tmp_file" >"$IPMI_PSU_CACHE_FILE" || {
+            rm -f "$tmp_file"
+            return 1
+        }
+        rm -f "$tmp_file"
+        chmod 0644 "$IPMI_PSU_CACHE_FILE" 2>/dev/null || true
+        return 0
+    fi
+
+    rm -f "$tmp_file"
+    return 1
+}
+
+remove_stale_ipmi_lock() {
+    [ -d "$IPMI_CACHE_LOCK" ] || return 0
+
+    now="$(date +%s)"
+    mtime="$(file_mtime "$IPMI_CACHE_LOCK")"
+    age=$((now - mtime))
+
+    if [ "$age" -gt "$IPMI_CACHE_LOCK_TTL" ]; then
+        rmdir "$IPMI_CACHE_LOCK" 2>/dev/null || true
+    fi
+}
+
+remove_stale_ipmi_psu_lock() {
+    [ -d "$IPMI_PSU_CACHE_LOCK" ] || return 0
+
+    now="$(date +%s)"
+    mtime="$(file_mtime "$IPMI_PSU_CACHE_LOCK")"
+    age=$((now - mtime))
+
+    if [ "$age" -gt "$IPMI_CACHE_LOCK_TTL" ]; then
+        rmdir "$IPMI_PSU_CACHE_LOCK" 2>/dev/null || true
+    fi
+}
+
+start_ipmi_cache_refresh() {
+    remove_stale_ipmi_lock
+
+    if mkdir "$IPMI_CACHE_LOCK" 2>/dev/null; then
+        (
+            refresh_ipmi_cache || true
+            rmdir "$IPMI_CACHE_LOCK" 2>/dev/null || true
+        ) >/dev/null 2>&1 &
+    fi
+}
+
+start_ipmi_psu_cache_refresh() {
+    remove_stale_ipmi_psu_lock
+
+    if mkdir "$IPMI_PSU_CACHE_LOCK" 2>/dev/null; then
+        (
+            refresh_ipmi_psu_cache || true
+            rmdir "$IPMI_PSU_CACHE_LOCK" 2>/dev/null || true
+        ) >/dev/null 2>&1 &
+    fi
+}
+
 ipmi_sensors() {
     need_cmd ipmitool
+    ensure_ipmi_cache_dir
 
     if ipmi_cache_fresh; then
         cat "$IPMI_CACHE_FILE"
         return
     fi
+
+    if [ -r "$IPMI_CACHE_FILE" ]; then
+        start_ipmi_cache_refresh
+        cat "$IPMI_CACHE_FILE"
+        return
+    fi
+
+    remove_stale_ipmi_lock
 
     if mkdir "$IPMI_CACHE_LOCK" 2>/dev/null; then
         refresh_ipmi_cache || {
@@ -79,18 +175,75 @@ ipmi_sensors() {
         return
     fi
 
-    sleep 1
-    if ipmi_cache_fresh; then
+    if [ -r "$IPMI_CACHE_FILE" ]; then
         cat "$IPMI_CACHE_FILE"
-    else
-        run_with_sudo ipmitool sensor 2>/dev/null
+        return
     fi
+
+    wait_count=0
+    while [ "$wait_count" -lt 5 ]; do
+        sleep 1
+        if [ -r "$IPMI_CACHE_FILE" ]; then
+            cat "$IPMI_CACHE_FILE"
+            return
+        fi
+        wait_count=$((wait_count + 1))
+    done
+
+    unsupported "ipmitool sensor cache is not ready"
+}
+
+ipmi_psu_sensors() {
+    need_cmd ipmitool
+    ensure_ipmi_cache_dir
+
+    if ipmi_psu_cache_fresh; then
+        cat "$IPMI_PSU_CACHE_FILE"
+        return
+    fi
+
+    if [ -r "$IPMI_PSU_CACHE_FILE" ]; then
+        start_ipmi_psu_cache_refresh
+        cat "$IPMI_PSU_CACHE_FILE"
+        return
+    fi
+
+    remove_stale_ipmi_psu_lock
+
+    if mkdir "$IPMI_PSU_CACHE_LOCK" 2>/dev/null; then
+        refresh_ipmi_psu_cache || {
+            rmdir "$IPMI_PSU_CACHE_LOCK" 2>/dev/null || true
+            [ -r "$IPMI_PSU_CACHE_FILE" ] && cat "$IPMI_PSU_CACHE_FILE" && return
+            unsupported "ipmitool sdr type Power Supply failed"
+        }
+        rmdir "$IPMI_PSU_CACHE_LOCK" 2>/dev/null || true
+        cat "$IPMI_PSU_CACHE_FILE"
+        return
+    fi
+
+    if [ -r "$IPMI_PSU_CACHE_FILE" ]; then
+        cat "$IPMI_PSU_CACHE_FILE"
+        return
+    fi
+
+    wait_count=0
+    while [ "$wait_count" -lt 5 ]; do
+        sleep 1
+        if [ -r "$IPMI_PSU_CACHE_FILE" ]; then
+            cat "$IPMI_PSU_CACHE_FILE"
+            return
+        fi
+        wait_count=$((wait_count + 1))
+    done
+
+    unsupported "ipmitool sdr type Power Supply cache is not ready"
 }
 
 ipmi_discovery() {
     kind="${1:-all}"
+    sensors="$(ipmi_sensors 2>/dev/null)" || unsupported "ipmitool sensor cache is not ready"
 
-    ipmi_sensors | awk -F '|' -v kind="$kind" '
+    echo "$sensors" | awk -F '|' -v kind="$kind" '
         function trim(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
         function esc(s) {
             gsub(/\\/, "\\\\", s)
@@ -104,7 +257,6 @@ ipmi_discovery() {
             u = tolower(unit)
             if (u ~ /degrees c/ || n ~ /temp|thermal|inlet|exhaust|ambient/) return "temperature"
             if (u ~ /rpm/) return "fan"
-            if (n ~ /psu|power supply|pwr supply|power unit/) return "psu"
             if (u ~ /discrete/ || n ~ /redundancy|presence|status|fail|fault|power good|(^|[^a-z])pg([^a-z]|$)/) return "status"
             if (u ~ /volts?/ || n ~ /voltage|volt/) return "voltage"
             return "other"
@@ -124,6 +276,39 @@ ipmi_discovery() {
             if (!first) printf ","
             first = 0
             printf "{\"{#SENSOR_ID}\":\"%s\",\"{#SENSOR}\":\"%s\",\"{#SENSOR_TYPE}\":\"%s\",\"{#SENSOR_UNIT}\":\"%s\",\"{#SENSOR_STATUS}\":\"%s\"}", sensor_id, esc(name), esc(type), esc(unit), esc(status)
+        }
+        END { print "]}" }
+    '
+}
+
+psu_discovery() {
+    sensors="$(ipmi_psu_sensors 2>/dev/null)" || unsupported "ipmitool sdr type Power Supply cache is not ready"
+
+    echo "$sensors" | awk -F '|' '
+        function trim(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
+        function esc(s) {
+            gsub(/\\/, "\\\\", s)
+            gsub(/"/, "\\\"", s)
+            gsub(/\t/, "\\t", s)
+            gsub(/\r/, "", s)
+            return s
+        }
+        BEGIN { first = 1; printf "{\"data\":[" }
+        NF >= 3 {
+            name = trim($1)
+            sdr_id = trim($2)
+            status = trim($3)
+            reading = trim($5)
+
+            if (name == "" || status == "ns") next
+            if (sdr_id == "") {
+                sensor_id++
+                sdr_id = sensor_id
+            }
+
+            if (!first) printf ","
+            first = 0
+            printf "{\"{#SENSOR_ID}\":\"%s\",\"{#SENSOR}\":\"%s\",\"{#SENSOR_TYPE}\":\"psu\",\"{#SENSOR_UNIT}\":\"Power Supply\",\"{#SENSOR_STATUS}\":\"%s\",\"{#SENSOR_READING}\":\"%s\"}", esc(sdr_id), esc(name), esc(status), esc(reading)
         }
         END { print "]}" }
     '
@@ -225,6 +410,71 @@ ipmi_status_by_id() {
     )"
 
     [ -n "$status" ] || unsupported "IPMI sensor id not found: $sensor_id"
+    echo "$status"
+}
+
+psu_status() {
+    sensor="${1:-}"
+    [ -n "$sensor" ] || unsupported "missing PSU sensor name"
+
+    status="$(
+        ipmi_psu_sensors | awk -F '|' -v wanted="$sensor" '
+            function trim(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
+            function psu_state(status, reading) {
+                s = tolower(status)
+                r = tolower(reading)
+                if (r ~ /failure|predictive|input lost|out-of-range|configuration error|lost/) return 1
+                if (s == "ok") return 0
+                return 1
+            }
+            NF >= 3 {
+                name = trim($1)
+                status = trim($3)
+                reading = trim($5)
+                if (name == wanted) {
+                    print psu_state(status, reading)
+                    exit
+                }
+            }
+        '
+    )"
+
+    [ -n "$status" ] || unsupported "IPMI Power Supply sensor not found: $sensor"
+    echo "$status"
+}
+
+psu_status_by_id() {
+    sensor_id="${1:-}"
+    [ -n "$sensor_id" ] || unsupported "missing PSU sensor id"
+
+    status="$(
+        ipmi_psu_sensors | awk -F '|' -v wanted="$sensor_id" '
+            function trim(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
+            function psu_state(status, reading) {
+                s = tolower(status)
+                r = tolower(reading)
+                if (r ~ /failure|predictive|input lost|out-of-range|configuration error|lost/) return 1
+                if (s == "ok") return 0
+                return 1
+            }
+            NF >= 3 {
+                name = trim($1)
+                sdr_id = trim($2)
+                status = trim($3)
+                reading = trim($5)
+                if (sdr_id == "") {
+                    row_id++
+                    sdr_id = row_id
+                }
+                if (sdr_id == wanted) {
+                    print psu_state(status, reading)
+                    exit
+                }
+            }
+        '
+    )"
+
+    [ -n "$status" ] || unsupported "IPMI Power Supply sensor id not found: $sensor_id"
     echo "$status"
 }
 
@@ -411,11 +661,14 @@ Usage: hardware-check.sh <command> [args]
 
 Commands:
   tool <ipmitool|smartctl|ras-mc-ctl>
-  ipmi-discovery [all|temperature|fan|psu|voltage|status]
+  ipmi-discovery [all|temperature|fan|voltage|status]
   ipmi-value <sensor-name>
   ipmi-value-by-id <sensor-id>
   ipmi-status <sensor-name>
   ipmi-status-by-id <sensor-id>
+  psu-discovery
+  psu-status <sensor-name>
+  psu-status-by-id <sensor-id>
   disk-discovery
   smart-health <disk> [smart-type]
   smart-attr <disk> [smart-type] <attribute-id-or-name>
@@ -445,6 +698,15 @@ case "$command" in
         ;;
     ipmi-status-by-id)
         ipmi_status_by_id "${1:-}"
+        ;;
+    psu-discovery)
+        psu_discovery
+        ;;
+    psu-status)
+        psu_status "${1:-}"
+        ;;
+    psu-status-by-id)
+        psu_status_by_id "${1:-}"
         ;;
     disk-discovery)
         disk_discovery
